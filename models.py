@@ -79,3 +79,33 @@ def dataReview(id, offset, limit):
     print(records)
     return records
 
+
+def checkUserInfoDB(input_name, input_password):
+    cursor = CONECTIONPG.cursor()
+    str_query = """select id, user_name, user_phone, user_email, user_password
+                                from users
+                                where user_name = '{name}' and user_password = '{password}'
+                                """.format(name=input_name, password=input_password)
+    cursor.execute(str_query)
+    records = cursor.fetchall()
+    cursor.close()
+    print(records)
+    return records
+
+
+def checkUserInDB(jwt_name, jwt_password):
+    cursor = CONECTIONPG.cursor()
+    str_query = """select id, user_name, user_phone, user_email, user_password
+                            from users
+                            where user_name = '{name}' and user_password = '{password}'
+                            """.format(name=jwt_name, password=jwt_password)
+    cursor.execute(str_query)
+    records = cursor.fetchall()
+    cursor.close()
+    print(records)
+    return records
+
+
+# def userDb()
+
+

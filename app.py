@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS, cross_origin
 from models import categoriesAnimal, productsFiltred, paginationProduct, dataReview,\
-    detailsProductDB, categoriesOneAnimal
+    detailsProductDB, categoriesOneAnimal, checkUserInDB
 from psycopg2 import *
 from math import ceil
 import json
+import jwt
+import datetime
 
-# import collections
+SECRET_KEY = "hkBxrbZ9Td4QEwgRewV6gZSVH4q78vBia4GBYuqd09SsiMsIjH"
+
 app = Flask(__name__)
 CORS(app)
 
@@ -20,9 +23,6 @@ CORS(app)
 
 CONN = connect(dbname='postgres', user='postgres',
                password='postgres', host='localhost', port=5433)
-
-
-# app.config['DEBUG'] = True
 
 
 @app.route('/categories', methods=['GET'])
@@ -62,7 +62,6 @@ def allCategoryOneAnimal():
         error_string = str(error)
         print(error_string)
         return error_string
-
 
 
 @app.route('/paginationcontent', methods=['GET'])
@@ -181,5 +180,65 @@ def info_review():
     return jsonify({'result': objects_list})
 
 
+@app.route('/registration', methods=['POST'])
+def record_user():
+    try:
+        user_info = request.get_json()
+        cursor = CONN.cursor()
+        cursor.execute("""INSERT INTO public.users(
+    	                            id, user_name, user_phone, user_email, user_password)
+    	                            VALUES (%(product_id)s, %(name_reviewer)s, %(stars_product)s, %(text_review)s);""",
+                   user_info)
+        CONN.commit()
+        cursor.close()
+        return jsonify("sucess")
+    except Exception as error:
+        error_string = str(error)
+        print(error_string)
+        return error_string
+
+
+@app.route('/user', methods=['GET'])
+@cross_origin()
+def loginCheckFunction():
+    input_name = request.args.get('login')
+    input_password = request.args.get('password')
+    user_data_from_db = checkUserInDB(input_name, input_password)
+    list_user_data = {}
+    for row in user_data_from_db:
+        list_user_data['id'] = row[0]
+        list_user_data['user_name'] = row[1]
+        list_user_data['user_password'] = row[2]
+        list_user_data['user_email'] = row[3]
+    if len(list_user_data) == 0:
+        return jsonify({"success": False, "result": 'user not exist', "Elapse_time": 0})
+    else:
+        timeLimit = datetime.datetime.utcnow() + datetime.timedelta(minutes=30) #set limit for user
+        payload = {"user_name": input_name, "user_password": input_password, "exp": timeLimit}
+        # Generate token
+        token = jwt.encode(payload, SECRET_KEY)
+        return jsonify({"success": True, "result": list_user_data, "token": token.decode("UTF-8"),
+                        "Elapse_time": f"{timeLimit}"})
+
+
+@app.route('/check_access', methods=['GET'])
+def checkToken():
+    token_passed = request.headers.get('TOKEN', default=None)
+    if token_passed == "undefined" or token_passed is None or token_passed == "":
+        return jsonify({"success": False, "message": "you are not verified"})
+    data = jwt.decode(token_passed, SECRET_KEY, algorithms=['HS256'])
+    jwt_name = data['user_name']
+    jwt_password = data['user_password']
+    answer_check_user = checkUserInDB(jwt_name, jwt_password)
+    list_info_user = {}
+    for row in answer_check_user:
+        list_info_user['id'] = row[0]
+        list_info_user['user_name'] = row[1]
+        list_info_user['user_password'] = row[2]
+    if len(list_info_user) == 0:
+        return jsonify({'result': "not exist user"})
+    return jsonify({"success": True, "message": "You Are verified"})
+
+
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
