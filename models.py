@@ -76,8 +76,12 @@ def dataReview(id, offset, limit):
     cursor.execute(str_query)
     records = cursor.fetchall()
     cursor.close()
-    print(records)
-    return records
+    cursor = CONECTIONPG.cursor()
+    str_tmp_count = """select count(*) from reviews where product_id = {id}""".format(id=id)
+    cursor.execute(str_tmp_count)
+    count = cursor.fetchall()
+    cursor.close()
+    return records, count
 
 
 def checkUserInfoDB(input_name, input_password):

@@ -4,7 +4,7 @@ from flask import Flask, request
 
 # app = Flask(__name__)
 
-SECRET_KEY = "hkBxrbZ9Td4QEwgRewV6gZSVH4q78vBia4GBYuqd09SsiMsIjH"
+# SECRET_KEY = "hkBxrbZ9Td4QEwgRewV6gZSVH4q78vBia4GBYuqd09SsiMsIjH"
 
 
 # def functionToken(request):

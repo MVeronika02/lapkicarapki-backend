@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS, cross_origin
-from models import categoriesAnimal, productsFiltred, paginationProduct, dataReview,\
+from models import categoriesAnimal, productsFiltred, paginationProduct, dataReview, \
     detailsProductDB, categoriesOneAnimal, checkUserInDB
 from psycopg2 import *
 from math import ceil
@@ -146,16 +146,16 @@ def detailsProduct():
 @app.route('/reviews', methods=['POST'])
 def create_review():
     try:
-      if request.method == 'POST':
-        info_product = request.get_json()
-        cursor = CONN.cursor()
-        cursor.execute("""INSERT INTO public.reviews(
+        if request.method == 'POST':
+            info_product = request.get_json()
+            cursor = CONN.cursor()
+            cursor.execute("""INSERT INTO public.reviews(
 	                            product_id, reviewer_name, numbers_of_stars, text_review)
 	                            VALUES (%(product_id)s, %(name_reviewer)s, %(stars_product)s, %(text_review)s);""",
                            info_product)
-        CONN.commit()
-        cursor.close()
-        return jsonify("sucess")
+            CONN.commit()
+            cursor.close()
+            return jsonify('success')
     except Exception as error:
         error_string = str(error)
         print(error_string)
@@ -167,8 +167,9 @@ def info_review():
     id = request.args.get('productid')
     offset = request.args.get('offset')
     limit = request.args.get('limit')
-    result_function = dataReview(id, offset, limit)
+    result_function, count_tmp = dataReview(id, offset, limit)
     objects_list = []
+    print(count_tmp[0][0], 'count_tmp')
     for row in result_function:
         tmp_dict = {}
         tmp_dict['product_id'] = row[0]
@@ -177,21 +178,41 @@ def info_review():
         tmp_dict['text_review'] = row[3]
         tmp_dict['review_date'] = row[4]
         objects_list.append(tmp_dict)
-    return jsonify({'result': objects_list})
+    count_page = count_tmp[0][0] / int(limit)
+    print(ceil(count_page))
+    return jsonify({'result': objects_list, 'count_page': ceil(count_page)})
 
 
 @app.route('/registration', methods=['POST'])
-def record_user():
+def registration_user():
     try:
-        user_info = request.get_json()
+        user_data = request.get_json()
+        login = user_data['login']
+        print(login, 'login')
         cursor = CONN.cursor()
-        cursor.execute("""INSERT INTO public.users(
-    	                            id, user_name, user_phone, user_email, user_password)
-    	                            VALUES (%(product_id)s, %(name_reviewer)s, %(stars_product)s, %(text_review)s);""",
-                   user_info)
+        # TODO: добавить логин с фронта;
+        query_str = """SELECT count(*) FROM users
+                          WHERE user_name = '{login}';""".format(login=login)
+        cursor.execute(query_str)
+        print(query_str)
+        records = cursor.fetchall()
+        print(records, 'records')
+        # TODO: правильно записать значение count из бд
+        if records[0][0] == 0:
+            # query_insert = """INSERT INTO users(user_name, user_phone, user_email, user_password)
+            #                     VALUES (%(login)s, %(tel)s, %(email)s, %(password)s)
+            #                     """, user_data
+            query_insert = """INSERT INTO users(user_name, user_phone, user_email, user_password)
+                                VALUES ('{login}', '{tel}', '{email}', '{password}')
+                            """.format(login=user_data['login'], tel=user_data['tel'],
+                                       email=user_data['email'], password=user_data['password'])
+            print(query_insert, 'query')
+            cursor.execute(query_insert)
+        else:
+            return jsonify({'error': 'user exist', 'success': False, 'confirm': True})
         CONN.commit()
         cursor.close()
-        return jsonify("sucess")
+        return jsonify({'success': True, 'confirm': False})
     except Exception as error:
         error_string = str(error)
         print(error_string)
@@ -208,24 +229,26 @@ def loginCheckFunction():
     for row in user_data_from_db:
         list_user_data['id'] = row[0]
         list_user_data['user_name'] = row[1]
-        list_user_data['user_password'] = row[2]
-        list_user_data['user_email'] = row[3]
+        list_user_data['user_phone'] = row[2]
+        list_user_data['user_password'] = row[3]
+        list_user_data['user_email'] = row[4]
     if len(list_user_data) == 0:
-        return jsonify({"success": False, "result": 'user not exist', "Elapse_time": 0})
+        return jsonify({'success': False, 'result': 'user not exist', 'Elapse_time': 0})
     else:
-        timeLimit = datetime.datetime.utcnow() + datetime.timedelta(minutes=30) #set limit for user
-        payload = {"user_name": input_name, "user_password": input_password, "exp": timeLimit}
+        timeLimit = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # set limit for user
+        payload = {'user_name': input_name, 'user_password': input_password, 'exp': timeLimit}
         # Generate token
         token = jwt.encode(payload, SECRET_KEY)
-        return jsonify({"success": True, "result": list_user_data, "token": token.decode("UTF-8"),
-                        "Elapse_time": f"{timeLimit}"})
+        return jsonify({'success': True, 'result': list_user_data, 'token': token.decode("UTF-8"),
+                        'Elapse_time': f'{timeLimit}'})
 
 
 @app.route('/check_access', methods=['GET'])
 def checkToken():
     token_passed = request.headers.get('TOKEN', default=None)
-    if token_passed == "undefined" or token_passed is None or token_passed == "":
-        return jsonify({"success": False, "message": "you are not verified"})
+    print(token_passed, 'token')
+    if token_passed == 'undefined' or token_passed is None or token_passed == '':
+        return jsonify({'success': False, 'message': 'you are not verified'})
     data = jwt.decode(token_passed, SECRET_KEY, algorithms=['HS256'])
     jwt_name = data['user_name']
     jwt_password = data['user_password']
@@ -237,7 +260,7 @@ def checkToken():
         list_info_user['user_password'] = row[2]
     if len(list_info_user) == 0:
         return jsonify({'result': "not exist user"})
-    return jsonify({"success": True, "message": "You Are verified"})
+    return jsonify({'success': True, 'message': 'You Are verified'})
 
 
 if __name__ == '__main__':
