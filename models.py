@@ -3,22 +3,63 @@ from config import CONECTIONPG
 
 def categoriesAnimal():
     cursor = CONECTIONPG.cursor()
-    cursor.execute("""select idAnimal, idCategory, nameCategory
-                from category_for_animals""")
+    cursor.execute("""select id_animal, id_category, name_category, url_category_image
+                from categories_for_animals""")
     records = cursor.fetchall()
     cursor.close()
     return records
 
 
-def categoriesOneAnimal(id):
+def paginationProduct(limit, page):
     cursor = CONECTIONPG.cursor()
-    cursor.execute("""select idAnimal, idCategory, nameCategory
-                    from category_for_animals
-                    where idAnimal = {id}
-                    """).format(id=id)
+    str_query = """select idCategory, idProduct, nameProduct, priceProduct, descriptionProduct, urlImageProduct 
+                        from products_for_animals
+                        order by idProduct
+                        limit {limit} offset {limit} * ({page} -1)
+                         """.format(limit=limit, page=page)
+    cursor.execute(str_query)
     records = cursor.fetchall()
     cursor.close()
+    cursor = CONECTIONPG.cursor()
+    str_query_count = """select count(*) from products_for_animals"""
+    cursor.execute(str_query_count)
+    count = cursor.fetchall()
+    cursor.close()
+    return records, count
+
+
+def productsCategory(animal, category):
+    cursor = CONECTIONPG.cursor()
+    str_query = """select idAnimal, idCategory, idProduct, nameProduct, priceProduct, urlImageProduct 
+                            from products_for_animals
+                            WHERE idAnimal = {animal} and idCategory = {category}
+                             """.format(animal=animal, category=category)
+    cursor.execute(str_query)
+    records = cursor.fetchall()
+    print(records, 'rec')
+    cursor.close()
     return records
+
+
+def paginationProductsCategory(limit, page, animal, category):
+    cursor = CONECTIONPG.cursor()
+    str_query = """select idAnimal, idCategory, idProduct, nameProduct, priceProduct, urlImageProduct
+                        from products_for_animals
+                        where idAnimal = {animal} and idCategory = {category}
+                        order by idProduct
+                        limit {limit} offset {limit} * ({page} -1)
+                         """.format(limit=limit, page=page, animal=animal, category=category)
+    cursor.execute(str_query)
+    records = cursor.fetchall()
+    cursor.close()
+    cursor = CONECTIONPG.cursor()
+    str_query_count = """select count(*) from products_for_animals
+                            where idAnimal = {animal} and idCategory = {category}
+                            """.format(animal=animal, category=category)
+    cursor.execute(str_query_count)
+    count = cursor.fetchall()
+    cursor.close()
+    return records, count
 
 
 def productsFiltred(value_min, value_max, limit, page):
@@ -45,24 +86,6 @@ def detailsProductDB(id):
     records = cursor.fetchall()
     cursor.close()
     return records
-
-
-def paginationProduct(limit, page):
-    cursor = CONECTIONPG.cursor()
-    str_query = """select idCategory, idProduct, nameProduct, priceProduct, descriptionProduct, urlImageProduct 
-                        from products_for_animals
-                        order by idProduct
-                        limit {limit} offset {limit} * ({page} -1)
-                         """.format(limit=limit, page=page)
-    cursor.execute(str_query)
-    records = cursor.fetchall()
-    cursor.close()
-    cursor = CONECTIONPG.cursor()
-    str_query_count = """select count(*) from products_for_animals"""
-    cursor.execute(str_query_count)
-    count = cursor.fetchall()
-    cursor.close()
-    return records, count
 
 
 def dataReview(id, offset, limit):

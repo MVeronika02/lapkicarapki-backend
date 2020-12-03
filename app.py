@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, redirect, url_for
 from flask_cors import CORS, cross_origin
-from models import categoriesAnimal, productsFiltred, paginationProduct, dataReview, \
-    detailsProductDB, categoriesOneAnimal, checkUserInDB
+from models import categoriesAnimal, paginationProduct, productsCategory, paginationProductsCategory,\
+    productsFiltred, dataReview, detailsProductDB, checkUserInDB
 from psycopg2 import *
 from math import ceil
 import json
@@ -24,6 +24,7 @@ CORS(app)
 CONN = connect(dbname='postgres', user='postgres',
                password='postgres', host='localhost', port=5433)
 
+#Категории животных
 
 @app.route('/categories', methods=['GET'])
 @cross_origin()
@@ -33,9 +34,10 @@ def allCategoryForAnimal():
         objects_list = []
         for row in result_function:
             d = {}
-            d['idAnimal'] = row[0]
-            d['idCategory'] = row[1]
-            d['nameCategory'] = row[2]
+            d['id_animal'] = row[0]
+            d['id_category'] = row[1]
+            d['name_category'] = row[2]
+            d['url_image_category'] = row[3]
             objects_list.append(d)
         return jsonify({'result': objects_list})
     except Exception as error:
@@ -44,26 +46,7 @@ def allCategoryForAnimal():
         return error_string
 
 
-@app.route('/categoryanimal', methods=['GET', 'POST'])
-@cross_origin()
-def allCategoryOneAnimal():
-    try:
-        id = request.args.get('id')
-        result_function = categoriesOneAnimal(id)
-        objects_list = []
-        for row in result_function:
-            d = {}
-            d['idAnimal'] = row[0]
-            d['idCategory'] = row[1]
-            d['nameCategory'] = row[2]
-            objects_list.append(d)
-        return jsonify({'result': objects_list})
-    except Exception as error:
-        error_string = str(error)
-        print(error_string)
-        return error_string
-
-
+#Пагинация контента
 @app.route('/paginationcontent', methods=['GET'])
 @cross_origin()
 def paginationContent():
@@ -72,8 +55,6 @@ def paginationContent():
         page = request.args.get('numberpage')
         rows, count_row = paginationProduct(limit, page)
         objects_list = []
-        print(rows)
-        print(count_row[0][0])
         for row in rows:
             tmp_row = {}
             tmp_row['idCategory'] = row[0]
@@ -84,7 +65,7 @@ def paginationContent():
             tmp_row['urlImageProduct'] = row[5]
             objects_list.append(tmp_row)
         count_page = count_row[0][0] / int(limit)
-        print(ceil(count_page))
+        # print(ceil(count_page))
         return jsonify({'result':
                             {'product': objects_list, 'count_page': ceil(count_page)}
                         })
@@ -94,6 +75,70 @@ def paginationContent():
         return error_string
 
 
+#Товары 1 категории
+@app.route('/productsonecategory', methods=['GET'])
+@cross_origin()
+def allProductsOnCategory():
+    try:
+        animal = request.args.get('animal')
+        category = request.args.get('category')
+        print(category, 'category')
+        print(animal, 'animal')
+        rows = productsCategory(animal, category)
+        objects_list = []
+        for row in rows:
+            tmp_row = {}
+            tmp_row['idAnimal'] = row[0]
+            tmp_row['idCategory'] = row[1]
+            tmp_row['idProduct'] = row[2]
+            tmp_row['nameProduct'] = row[3]
+            tmp_row['priceProduct'] = row[4]
+            tmp_row['urlImageProduct'] = row[5]
+            objects_list.append(tmp_row)
+        print(objects_list, 'obj')
+        if objects_list == 0:
+            return jsonify({'success': False, 'result': 'not available'})
+        else:
+            return jsonify({'result': {'product': objects_list}})
+
+    except Exception as error:
+        error_string = str(error)
+        print(error_string)
+        return error_string
+
+
+#Пагинация товаров 1 категории
+@app.route('/paginationproductsonecategory', methods=['GET'])
+@cross_origin()
+def paginationProducts():
+    try:
+        limit = request.args.get('limit')
+        page = request.args.get('numberpage')
+        animal = request.args.get('animal')
+        category = request.args.get('category')
+        rows, count_row = paginationProductsCategory(limit, page, animal, category)
+        objects_list = []
+        for row in rows:
+            tmp_row = {}
+            tmp_row['idAnimal'] = row[0]
+            tmp_row['idCategory'] = row[1]
+            tmp_row['idProduct'] = row[2]
+            tmp_row['nameProduct'] = row[3]
+            tmp_row['priceProduct'] = row[4]
+            tmp_row['urlImageProduct'] = row[5]
+            objects_list.append(tmp_row)
+        count_page = count_row[0][0] / int(limit)
+        print("count_page", ceil(count_page))
+        return jsonify({'result':
+                            {'product': objects_list, 'count_page': ceil(count_page)}
+                        })
+    except Exception as error:
+        error_string = str(error)
+        print(error_string)
+        return error_string
+
+
+#Фильтр товара по параметрам
 @app.route('/products', methods=['GET'])
 @cross_origin()
 def allProductsFiltred():
@@ -120,6 +165,7 @@ def allProductsFiltred():
         return error_string
 
 
+#Детали товара
 @app.route('/detailsproduct', methods=['GET'])
 @cross_origin()
 def detailsProduct():
@@ -143,6 +189,7 @@ def detailsProduct():
         return error_string
 
 
+#Оставить отзыв о товаре
 @app.route('/reviews', methods=['POST'])
 def create_review():
     try:
@@ -162,6 +209,7 @@ def create_review():
         return error_string
 
 
+#Просмотр отзывов о товаре
 @app.route('/inforeviews', methods=['GET'])
 def info_review():
     id = request.args.get('productid')
@@ -183,6 +231,7 @@ def info_review():
     return jsonify({'result': objects_list, 'count_page': ceil(count_page)})
 
 
+#Регистрация на сайте
 @app.route('/registration', methods=['POST'])
 def registration_user():
     try:
@@ -219,6 +268,7 @@ def registration_user():
         return error_string
 
 
+#Вход в личный кабинет
 @app.route('/user', methods=['GET'])
 @cross_origin()
 def loginCheckFunction():
