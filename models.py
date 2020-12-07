@@ -12,9 +12,9 @@ def categoriesAnimal():
 
 def paginationProduct(limit, page):
     cursor = CONECTIONPG.cursor()
-    str_query = """select idCategory, idProduct, nameProduct, priceProduct, descriptionProduct, urlImageProduct 
+    str_query = """select id_category, id_product, name_product, price_product, description_product, url_image_product 
                         from products_for_animals
-                        order by idProduct
+                        order by id_product
                         limit {limit} offset {limit} * ({page} -1)
                          """.format(limit=limit, page=page)
     cursor.execute(str_query)
@@ -30,9 +30,9 @@ def paginationProduct(limit, page):
 
 def productsCategory(animal, category):
     cursor = CONECTIONPG.cursor()
-    str_query = """select idAnimal, idCategory, idProduct, nameProduct, priceProduct, urlImageProduct 
+    str_query = """select id_animal, id_category, id_product, name_product, price_product, url_image_product 
                             from products_for_animals
-                            WHERE idAnimal = {animal} and idCategory = {category}
+                            WHERE id_animal = {animal} and id_category = {category}
                              """.format(animal=animal, category=category)
     cursor.execute(str_query)
     records = cursor.fetchall()
@@ -43,10 +43,10 @@ def productsCategory(animal, category):
 
 def paginationProductsCategory(limit, page, animal, category):
     cursor = CONECTIONPG.cursor()
-    str_query = """select idAnimal, idCategory, idProduct, nameProduct, priceProduct, urlImageProduct
+    str_query = """select id_animal, id_category, id_product, name_product, price_product, url_image_product
                         from products_for_animals
-                        where idAnimal = {animal} and idCategory = {category}
-                        order by idProduct
+                        where id_animal = {animal} and id_category = {category}
+                        order by id_product
                         limit {limit} offset {limit} * ({page} -1)
                          """.format(limit=limit, page=page, animal=animal, category=category)
     cursor.execute(str_query)
@@ -54,7 +54,7 @@ def paginationProductsCategory(limit, page, animal, category):
     cursor.close()
     cursor = CONECTIONPG.cursor()
     str_query_count = """select count(*) from products_for_animals
-                            where idAnimal = {animal} and idCategory = {category}
+                            where id_animal = {animal} and id_category = {category}
                             """.format(animal=animal, category=category)
     cursor.execute(str_query_count)
     count = cursor.fetchall()
@@ -64,10 +64,10 @@ def paginationProductsCategory(limit, page, animal, category):
 
 def productsFiltred(value_min, value_max, limit, page):
     cursor = CONECTIONPG.cursor()
-    str_query = """select idCategory, idProduct, nameProduct, priceProduct, descriptionProduct, urlImageProduct 
+    str_query = """select id_category, id_product, name_product, price_product, description_product, url_image_product 
                     from products_for_animals
-                    WHERE priceProduct BETWEEN {_value_min} and {_value_max}
-                    order by idProduct
+                    WHERE price_product BETWEEN {_value_min} and {_value_max}
+                    order by id_product
                     limit {limit} offset {limit} * ({page} -1)
                      """.format(_value_min=value_min, _value_max=value_max, limit=limit, page=page)
     cursor.execute(str_query)
@@ -78,9 +78,9 @@ def productsFiltred(value_min, value_max, limit, page):
 
 def detailsProductDB(id):
     cursor = CONECTIONPG.cursor()
-    str_query = """select idCategory, idProduct, nameProduct, priceProduct, descriptionProduct, urlImageProduct 
+    str_query = """select id_category, id_product, name_product, price_product, description_product, url_image_product 
                         from products_for_animals
-                        WHERE idProduct = {id}
+                        WHERE id_product = {id}
                          """.format(id=id)
     cursor.execute(str_query)
     records = cursor.fetchall()

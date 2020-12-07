@@ -57,12 +57,12 @@ def paginationContent():
         objects_list = []
         for row in rows:
             tmp_row = {}
-            tmp_row['idCategory'] = row[0]
-            tmp_row['idProduct'] = row[1]
-            tmp_row['nameProduct'] = row[2]
-            tmp_row['priceProduct'] = row[3]
-            tmp_row['descriptionProduct'] = row[4]
-            tmp_row['urlImageProduct'] = row[5]
+            tmp_row['id_category'] = row[0]
+            tmp_row['id_product'] = row[1]
+            tmp_row['name_product'] = row[2]
+            tmp_row['price_product'] = row[3]
+            tmp_row['description_product'] = row[4]
+            tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         count_page = count_row[0][0] / int(limit)
         # print(ceil(count_page))
@@ -88,12 +88,12 @@ def allProductsOnCategory():
         objects_list = []
         for row in rows:
             tmp_row = {}
-            tmp_row['idAnimal'] = row[0]
-            tmp_row['idCategory'] = row[1]
-            tmp_row['idProduct'] = row[2]
-            tmp_row['nameProduct'] = row[3]
-            tmp_row['priceProduct'] = row[4]
-            tmp_row['urlImageProduct'] = row[5]
+            tmp_row['id_animal'] = row[0]
+            tmp_row['id_category'] = row[1]
+            tmp_row['id_product'] = row[2]
+            tmp_row['name_product'] = row[3]
+            tmp_row['price_product'] = row[4]
+            tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         print(objects_list, 'obj')
         if objects_list == 0:
@@ -116,16 +116,18 @@ def paginationProducts():
         page = request.args.get('numberpage')
         animal = request.args.get('animal')
         category = request.args.get('category')
+        if animal == "undefined" or category == "undefined":
+            return jsonify({'status': False, 'message': 'animal="undefined" or category="animal"'})
         rows, count_row = paginationProductsCategory(limit, page, animal, category)
         objects_list = []
         for row in rows:
             tmp_row = {}
-            tmp_row['idAnimal'] = row[0]
-            tmp_row['idCategory'] = row[1]
-            tmp_row['idProduct'] = row[2]
-            tmp_row['nameProduct'] = row[3]
-            tmp_row['priceProduct'] = row[4]
-            tmp_row['urlImageProduct'] = row[5]
+            tmp_row['id_animal'] = row[0]
+            tmp_row['id_category'] = row[1]
+            tmp_row['id_product'] = row[2]
+            tmp_row['name_product'] = row[3]
+            tmp_row['price_product'] = row[4]
+            tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         count_page = count_row[0][0] / int(limit)
         print("count_page", ceil(count_page))
@@ -151,12 +153,12 @@ def allProductsFiltred():
         objects_list = []
         for row in result_function:
             tmp_row = {}
-            tmp_row['idCategory'] = row[0]
-            tmp_row['idProduct'] = row[1]
-            tmp_row['nameProduct'] = row[2]
-            tmp_row['priceProduct'] = row[3]
-            tmp_row['descriptionProduct'] = row[4]
-            tmp_row['urlImageProduct'] = row[5]
+            tmp_row['id_category'] = row[0]
+            tmp_row['id_product'] = row[1]
+            tmp_row['name_product'] = row[2]
+            tmp_row['price_product'] = row[3]
+            tmp_row['description_product'] = row[4]
+            tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         return jsonify({'result': objects_list})
     except Exception as error:
@@ -175,12 +177,12 @@ def detailsProduct():
         objects_list = []
         for row in result_function:
             tmp_row = {}
-            tmp_row['idCategory'] = row[0]
-            tmp_row['idProduct'] = row[1]
-            tmp_row['nameProduct'] = row[2]
-            tmp_row['priceProduct'] = row[3]
-            tmp_row['descriptionProduct'] = row[4]
-            tmp_row['urlImageProduct'] = row[5]
+            tmp_row['id_category'] = row[0]
+            tmp_row['id_product'] = row[1]
+            tmp_row['name_product'] = row[2]
+            tmp_row['price_product'] = row[3]
+            tmp_row['description_product'] = row[4]
+            tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         return jsonify({'result': objects_list})
     except Exception as error:
