@@ -315,5 +315,52 @@ def checkToken():
     return jsonify({'success': True, 'message': 'You Are verified'})
 
 
+# #Сохранение заказа в БД
+@app.route('/placeorder', methods=['POST'])
+def placeOrder():
+    try:
+        info_order = request.get_json()
+        # delivery = info_order['delivery.street']
+        print(info_order, 'info')
+        # print(delivery, 'delivery ')
+        cursor = CONN.cursor()
+        if info_order['delivery']['street'] == '':
+            query_insert = """INSERT INTO public.orders(
+                                                user_name, user_surname, user_phone, user_email, user_city,
+                                                delivery_type, shop_point_id, street, house, flat, delivery_date,
+                                                payment_type)
+                                     VALUES ('{name}', '{surname}', '{phone}', '{email}', '{city}', '{deliveryType}',
+                                     '{shopId}', NULL, NULL, NULL, NULL, '{paymentType}')
+                                    """.format(name=info_order['user_name'], surname=info_order['user_surname'],
+                                               phone=info_order['user_phone'], email=info_order['user_email'],
+                                               city=info_order['user_city'], deliveryType=info_order['delivery_type'],
+                                               shopId=info_order['shop_point_id'],
+                                               paymentType=info_order['payment_type'])
+        else:
+            query_insert = """INSERT INTO public.orders(
+                                    user_name, user_surname, user_phone, user_email, user_city, delivery_type,
+                                    shop_point_id, street, house, flat, payment_type)
+                         VALUES ('{name}', '{surname}', '{phone}', '{email}', '{city}', '{deliveryType}', '{shopId}',
+                                '{street}', '{house}', '{flat}', '{paymentType}')
+                        """.format(name=info_order['user_name'], surname=info_order['user_surname'],
+                                   phone=info_order['user_phone'], email=info_order['user_email'],
+                                   city=info_order['user_city'], deliveryType=info_order['delivery_type'],
+                                   shopId=info_order['shop_point_id'], street=info_order['delivery']['street'],
+                                   house=info_order['delivery']['house'], flat=info_order['delivery']['flat'],
+                                   paymentType=info_order['payment_type'])
+        # print(query_insert, 'query')
+        cursor.execute(query_insert)
+        if query_insert == 0:
+            return jsonify({'success': False})
+        CONN.commit()
+        cursor.close()
+        return jsonify({'success': True})
+
+    except Exception as error:
+        error_string = str(error)
+        print(error_string, '4444')
+        return error_string
+
+
 if __name__ == '__main__':
     app.run(debug=True)
