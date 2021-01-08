@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify, redirect, url_for
+from flask import Flask, request, jsonify, Response, url_for, make_response
 from flask_cors import CORS, cross_origin
-from models import categoriesAnimal, paginationProduct, productsCategory, paginationProductsCategory,\
-    productsFiltred, dataReview, detailsProductDB, checkUserInDB
+from models import categoriesAnimal, paginationProduct, productsCategory, paginationProductsCategory, \
+    productsFiltred, dataReview, detailsProductDB, checkUserInDB, allOrdersUser
 from psycopg2 import *
 from math import ceil
 import json
@@ -24,7 +24,8 @@ CORS(app)
 CONN = connect(dbname='postgres', user='postgres',
                password='postgres', host='localhost', port=5433)
 
-#Категории животных
+
+# Категории животных
 
 @app.route('/categories', methods=['GET'])
 @cross_origin()
@@ -46,7 +47,7 @@ def allCategoryForAnimal():
         return error_string
 
 
-#Пагинация контента
+# Пагинация контента
 @app.route('/paginationcontent', methods=['GET'])
 @cross_origin()
 def paginationContent():
@@ -75,15 +76,13 @@ def paginationContent():
         return error_string
 
 
-#Товары 1 категории
+# Товары 1 категории
 @app.route('/productsonecategory', methods=['GET'])
 @cross_origin()
 def allProductsOnCategory():
     try:
         animal = request.args.get('animal')
         category = request.args.get('category')
-        print(category, 'category')
-        print(animal, 'animal')
         rows = productsCategory(animal, category)
         objects_list = []
         for row in rows:
@@ -95,7 +94,6 @@ def allProductsOnCategory():
             tmp_row['price_product'] = row[4]
             tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
-        print(objects_list, 'obj')
         if objects_list == 0:
             return jsonify({'success': False, 'result': 'not available'})
         else:
@@ -107,7 +105,7 @@ def allProductsOnCategory():
         return error_string
 
 
-#Пагинация товаров 1 категории
+# Пагинация товаров 1 категории
 @app.route('/paginationproductsonecategory', methods=['GET'])
 @cross_origin()
 def paginationProducts():
@@ -130,7 +128,6 @@ def paginationProducts():
             tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         count_page = count_row[0][0] / int(limit)
-        print("count_page", ceil(count_page))
         return jsonify({'result':
                             {'product': objects_list, 'count_page': ceil(count_page)}
                         })
@@ -140,7 +137,7 @@ def paginationProducts():
         return error_string
 
 
-#Фильтр товара по параметрам
+# Фильтр товара по параметрам
 @app.route('/products', methods=['GET'])
 @cross_origin()
 def allProductsFiltred():
@@ -167,7 +164,7 @@ def allProductsFiltred():
         return error_string
 
 
-#Детали товара
+# Детали товара
 @app.route('/detailsproduct', methods=['GET'])
 @cross_origin()
 def detailsProduct():
@@ -191,7 +188,7 @@ def detailsProduct():
         return error_string
 
 
-#Оставить отзыв о товаре
+# Оставить отзыв о товаре
 @app.route('/reviews', methods=['POST'])
 def create_review():
     try:
@@ -211,7 +208,7 @@ def create_review():
         return error_string
 
 
-#Просмотр отзывов о товаре
+# Просмотр отзывов о товаре
 @app.route('/inforeviews', methods=['GET'])
 def info_review():
     id = request.args.get('productid')
@@ -219,7 +216,6 @@ def info_review():
     limit = request.args.get('limit')
     result_function, count_tmp = dataReview(id, offset, limit)
     objects_list = []
-    print(count_tmp[0][0], 'count_tmp')
     for row in result_function:
         tmp_dict = {}
         tmp_dict['product_id'] = row[0]
@@ -229,11 +225,10 @@ def info_review():
         tmp_dict['review_date'] = row[4]
         objects_list.append(tmp_dict)
     count_page = count_tmp[0][0] / int(limit)
-    print(ceil(count_page))
     return jsonify({'result': objects_list, 'count_page': ceil(count_page)})
 
 
-#Регистрация на сайте
+# Регистрация на сайте
 @app.route('/registration', methods=['POST'])
 def registration_user():
     try:
@@ -245,9 +240,7 @@ def registration_user():
         query_str = """SELECT count(*) FROM users
                           WHERE user_name = '{login}';""".format(login=login)
         cursor.execute(query_str)
-        print(query_str)
         records = cursor.fetchall()
-        print(records, 'records')
         # TODO: правильно записать значение count из бд
         if records[0][0] == 0:
             # query_insert = """INSERT INTO users(user_name, user_phone, user_email, user_password)
@@ -257,7 +250,6 @@ def registration_user():
                                 VALUES ('{login}', '{tel}', '{email}', '{password}')
                             """.format(login=user_data['login'], tel=user_data['tel'],
                                        email=user_data['email'], password=user_data['password'])
-            print(query_insert, 'query')
             cursor.execute(query_insert)
         else:
             return jsonify({'error': 'user exist', 'success': False, 'confirm': True})
@@ -270,7 +262,7 @@ def registration_user():
         return error_string
 
 
-#Вход в личный кабинет
+# Вход в личный кабинет
 @app.route('/user', methods=['GET'])
 @cross_origin()
 def loginCheckFunction():
@@ -298,7 +290,6 @@ def loginCheckFunction():
 @app.route('/check_access', methods=['GET'])
 def checkToken():
     token_passed = request.headers.get('TOKEN', default=None)
-    print(token_passed, 'token')
     if token_passed == 'undefined' or token_passed is None or token_passed == '':
         return jsonify({'success': False, 'message': 'you are not verified'})
     data = jwt.decode(token_passed, SECRET_KEY, algorithms=['HS256'])
@@ -320,38 +311,50 @@ def checkToken():
 def placeOrder():
     try:
         info_order = request.get_json()
-        # delivery = info_order['delivery.street']
-        print(info_order, 'info')
-        # print(delivery, 'delivery ')
         cursor = CONN.cursor()
+        print(info_order['products'])
         if info_order['delivery']['street'] == '':
             query_insert = """INSERT INTO public.orders(
                                                 user_name, user_surname, user_phone, user_email, user_city,
                                                 delivery_type, shop_point_id, street, house, flat, delivery_date,
-                                                payment_type)
+                                                payment_type, total_price_products, count_product, id_user)
                                      VALUES ('{name}', '{surname}', '{phone}', '{email}', '{city}', '{deliveryType}',
-                                     '{shopId}', NULL, NULL, NULL, NULL, '{paymentType}')
+                                     '{shopId}', NULL, NULL, NULL, NULL, '{paymentType}', '{totalPrice}',
+                                     '{countProducts}', '{idUser}')
+                                RETURNING id_order
                                     """.format(name=info_order['user_name'], surname=info_order['user_surname'],
                                                phone=info_order['user_phone'], email=info_order['user_email'],
                                                city=info_order['user_city'], deliveryType=info_order['delivery_type'],
                                                shopId=info_order['shop_point_id'],
-                                               paymentType=info_order['payment_type'])
+                                               paymentType=info_order['payment_type'],
+                                               totalPrice=info_order['total_price'],
+                                               countProducts=info_order['count_products'], idUser=info_order['id_user'])
         else:
             query_insert = """INSERT INTO public.orders(
                                     user_name, user_surname, user_phone, user_email, user_city, delivery_type,
-                                    shop_point_id, street, house, flat, payment_type)
+                                    shop_point_id, street, house, flat, payment_type, total_price_products,
+                                    count_product id_user)
                          VALUES ('{name}', '{surname}', '{phone}', '{email}', '{city}', '{deliveryType}', '{shopId}',
-                                '{street}', '{house}', '{flat}', '{paymentType}')
+                                '{street}', '{house}', '{flat}', '{paymentType}', '{totalPrice}', '{countProducts}',
+                                '{idUser}')
+                        RETURNING id_order
                         """.format(name=info_order['user_name'], surname=info_order['user_surname'],
                                    phone=info_order['user_phone'], email=info_order['user_email'],
                                    city=info_order['user_city'], deliveryType=info_order['delivery_type'],
                                    shopId=info_order['shop_point_id'], street=info_order['delivery']['street'],
                                    house=info_order['delivery']['house'], flat=info_order['delivery']['flat'],
-                                   paymentType=info_order['payment_type'])
-        # print(query_insert, 'query')
+                                   paymentType=info_order['payment_type'], totalPrice=info_order['total_price'],
+                                   countProducts=info_order['count_products'], idUser=info_order['id_user'])
         cursor.execute(query_insert)
+        id_of_new_row = cursor.fetchone()[0]
+        for product in info_order['products']:
+            query_order_products = """INSERT INTO public.order_products(id_order_m, id_product_m)
+                                                VALUES ({order}, {product})
+                                """.format(order=id_of_new_row, product=product['id_product'])
+            cursor.execute(query_order_products)
         if query_insert == 0:
             return jsonify({'success': False})
+
         CONN.commit()
         cursor.close()
         return jsonify({'success': True})
@@ -362,5 +365,66 @@ def placeOrder():
         return error_string
 
 
+# Зфбираем заказы в БД
+@app.route('/myorders', methods=['GET'])
+def getOrders():
+    try:
+        id = request.args.get('id')
+        ordersDB = allOrdersUser(id)
+        orders_list = []
+        cursor = CONN.cursor()
+        for row in ordersDB:
+            dTmp = {
+                'id_order': row[0],
+                'delivery_date': row[1],
+                'delivery_type': row[2],
+                'shop_point_id': row[3],
+                'payment_type': row[4],
+                'user_city': row[5],
+                'count_product': row[6],
+                'total_price_products': row[7],
+                'product': [],
+            }
+            query_shop = """select * from shops_point
+                          where id_shops_point = {id}""".format(id=dTmp['shop_point_id'])
+            cursor.execute(query_shop)
+            records = cursor.fetchall()
+            for row in records:
+                dTmp['name_shop'] = row[1]
+                dTmp['adress_shop'] = row[2]
+                dTmp['working_hours'] = row[3]
+
+            query_id = """select id_product_m from order_products
+                                      where id_order_m = {id}""".format(id=dTmp['id_order'])
+            cursor.execute(query_id)
+            product_ids = cursor.fetchall()
+
+            idProduct = 0
+            for i in product_ids:
+                for j in i:
+                    idProduct = j
+                    query_product = """select id_product, name_product, price_product, url_image_product
+                                    from products_for_animals
+                                    where id_product = {id}""".format(id=idProduct)
+                    cursor.execute(query_product)
+                    productInfo = cursor.fetchall()
+                    for row in productInfo:
+                        infoTmp = {}
+                        print(row)
+                        infoTmp['name_product'] = row[1]
+                        infoTmp['price_product'] = row[2]
+                        infoTmp['url_image_product'] = row[3]
+                        dTmp['product'].append(infoTmp)
+            orders_list.append(dTmp)
+        print(orders_list, ' orderlist')
+        CONN.commit()
+        cursor.close()
+        return jsonify({'result': orders_list})
+    except Exception as error:
+        error_string = str(error)
+        print(error_string)
+        return error_string
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port="5000")

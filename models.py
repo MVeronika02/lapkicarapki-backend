@@ -133,6 +133,25 @@ def checkUserInDB(jwt_name, jwt_password):
     return records
 
 
+def allOrdersUser(id):
+    cursor = CONECTIONPG.cursor()
+    str_query = """select id_order,
+                          delivery_date,
+                          (select name_order_delivery from order_delivery
+                          where id_order_delivery = orders.delivery_type) as delivery_type,
+                          shop_point_id,
+                          (select name_payment_method from payment_methods
+                          where id_payment_method = orders.payment_type) as payment_type,
+                          user_city,
+                          count_product,
+                          total_price_products
+                        from orders where id_user = {id} """.format(id=id)
+    cursor.execute(str_query)
+    records = cursor.fetchall()
+    cursor.close()
+    return records
+
+
 # def userDb()
 
 
