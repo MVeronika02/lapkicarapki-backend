@@ -90,17 +90,17 @@ def detailsProductDB(id):
 
 def dataReview(id, offset, limit):
     cursor = CONECTIONPG.cursor()
-    str_query = """select product_id, reviewer_name, numbers_of_stars, text_review, to_char(review_date, 'dd.mm.YYYY')
+    str_query = """select id_product, reviewer_name, numbers_of_stars, text_review, to_char(review_date, 'dd.mm.YYYY')
                         from reviews
-                        where product_id = {id}
-                        order by product_id
+                        where id_product = {id}
+                        order by id_product
                         limit {limit} offset {limit} * ({offset} -1)
                         """.format(id=id, offset=offset, limit=limit)
     cursor.execute(str_query)
     records = cursor.fetchall()
     cursor.close()
     cursor = CONECTIONPG.cursor()
-    str_tmp_count = """select count(*) from reviews where product_id = {id}""".format(id=id)
+    str_tmp_count = """select count(*) from reviews where id_product = {id}""".format(id=id)
     cursor.execute(str_tmp_count)
     count = cursor.fetchall()
     cursor.close()
@@ -122,7 +122,7 @@ def checkUserInfoDB(input_name, input_password):
 
 def checkUserInDB(jwt_name, jwt_password):
     cursor = CONECTIONPG.cursor()
-    str_query = """select id, user_name, user_phone, user_email, user_password
+    str_query = """select id, user_name, user_email, user_password
                             from users
                             where user_name = '{name}' and user_password = '{password}'
                             """.format(name=jwt_name, password=jwt_password)
@@ -135,23 +135,29 @@ def checkUserInDB(jwt_name, jwt_password):
 
 def allOrdersUser(id):
     cursor = CONECTIONPG.cursor()
-    str_query = """select id_order,
-                          delivery_date,
-                          (select name_order_delivery from order_delivery
-                          where id_order_delivery = orders.delivery_type) as delivery_type,
-                          shop_point_id,
-                          (select name_payment_method from payment_methods
-                          where id_payment_method = orders.payment_type) as payment_type,
-                          user_city,
-                          count_product,
-                          total_price_products
-                        from orders where id_user = {id} """.format(id=id)
+    str_query = """select
+                        id_order,
+                        delivery_date,
+                        name_delivery_type,
+                        name_payment_method,
+                        id_shop_point,
+                        name_shop,
+                        address_shop,
+                        working_hours,
+                        user_city,
+                        count_product,
+                        total_price_products
+                    from orders as o
+                    join order_delivery as od
+                    on od.id_delivery_type = o.id_delivery_type
+                    join payment_methods as pm
+                    on pm.id_payment_method = o.id_payment_method
+                    join shops_point as sp
+                    on sp.id_shop_point = o.id_shop
+                    where o.id_user = {id} """.format(id=id)
     cursor.execute(str_query)
     records = cursor.fetchall()
     cursor.close()
     return records
 
-
 # def userDb()
-
-

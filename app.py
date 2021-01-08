@@ -233,12 +233,11 @@ def info_review():
 def registration_user():
     try:
         user_data = request.get_json()
-        login = user_data['login']
-        print(login, 'login')
+        name = user_data['name']
         cursor = CONN.cursor()
         # TODO: добавить логин с фронта;
         query_str = """SELECT count(*) FROM users
-                          WHERE user_name = '{login}';""".format(login=login)
+                          WHERE user_name = '{name}';""".format(name=name)
         cursor.execute(query_str)
         records = cursor.fetchall()
         # TODO: правильно записать значение count из бд
@@ -246,10 +245,10 @@ def registration_user():
             # query_insert = """INSERT INTO users(user_name, user_phone, user_email, user_password)
             #                     VALUES (%(login)s, %(tel)s, %(email)s, %(password)s)
             #                     """, user_data
-            query_insert = """INSERT INTO users(user_name, user_phone, user_email, user_password)
-                                VALUES ('{login}', '{tel}', '{email}', '{password}')
-                            """.format(login=user_data['login'], tel=user_data['tel'],
-                                       email=user_data['email'], password=user_data['password'])
+            query_insert = """INSERT INTO users(user_name, user_email, user_password)
+                                VALUES ('{name}', '{email}', '{password}')
+                            """.format(name=user_data['name'], email=user_data['email'],
+                                       password=user_data['password'])
             cursor.execute(query_insert)
         else:
             return jsonify({'error': 'user exist', 'success': False, 'confirm': True})
@@ -273,9 +272,8 @@ def loginCheckFunction():
     for row in user_data_from_db:
         list_user_data['id'] = row[0]
         list_user_data['user_name'] = row[1]
-        list_user_data['user_phone'] = row[2]
-        list_user_data['user_password'] = row[3]
-        list_user_data['user_email'] = row[4]
+        list_user_data['user_password'] = row[2]
+        list_user_data['user_email'] = row[3]
     if len(list_user_data) == 0:
         return jsonify({'success': False, 'result': 'user not exist', 'Elapse_time': 0})
     else:
@@ -377,29 +375,31 @@ def getOrders():
             dTmp = {
                 'id_order': row[0],
                 'delivery_date': row[1],
-                'delivery_type': row[2],
-                'shop_point_id': row[3],
-                'payment_type': row[4],
-                'user_city': row[5],
-                'count_product': row[6],
-                'total_price_products': row[7],
+                'name_delivery_type': row[2],
+                'name_payment_method': row[3],
+                'id_shop_point': row[4],
+                'name_shop': row[5],
+                'address_shop': row[6],
+                'working_hours': row[7],
+                'user_city': row[8],
+                'count_product': row[9],
+                'total_price_products': row[10],
                 'product': [],
             }
-            query_shop = """select * from shops_point
-                          where id_shops_point = {id}""".format(id=dTmp['shop_point_id'])
-            cursor.execute(query_shop)
-            records = cursor.fetchall()
-            for row in records:
-                dTmp['name_shop'] = row[1]
-                dTmp['adress_shop'] = row[2]
-                dTmp['working_hours'] = row[3]
+            # query_shop = """select * from shops_point
+            #               where id_shops_point = {id}""".format(id=dTmp['shop_point_id'])
+            # cursor.execute(query_shop)
+            # records = cursor.fetchall()
+            # for row in records:
+            #     dTmp['name_shop'] = row[1]
+            #     dTmp['adress_shop'] = row[2]
+            #     dTmp['working_hours'] = row[3]
 
             query_id = """select id_product_m from order_products
                                       where id_order_m = {id}""".format(id=dTmp['id_order'])
             cursor.execute(query_id)
             product_ids = cursor.fetchall()
 
-            idProduct = 0
             for i in product_ids:
                 for j in i:
                     idProduct = j
