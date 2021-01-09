@@ -133,7 +133,7 @@ def checkUserInDB(jwt_name, jwt_password):
     return records
 
 
-def allOrdersUser(id):
+def allOrdersUser(id, offset, limit):
     cursor = CONECTIONPG.cursor()
     str_query = """select
                         id_order,
@@ -154,10 +154,17 @@ def allOrdersUser(id):
                     on pm.id_payment_method = o.id_payment_method
                     join shops_point as sp
                     on sp.id_shop_point = o.id_shop
-                    where o.id_user = {id} """.format(id=id)
+                    where o.id_user = {id}
+                    order by o.id_user
+                    limit {limit} offset {limit} * ({offset} -1)""".format(id=id, offset=offset, limit=limit)
     cursor.execute(str_query)
     records = cursor.fetchall()
     cursor.close()
-    return records
+    cursor = CONECTIONPG.cursor()
+    str_tmp_count = """select count(*) from orders where id_user = {id}""".format(id=id)
+    cursor.execute(str_tmp_count)
+    count = cursor.fetchall()
+    cursor.close()
+    return records, count
 
 # def userDb()

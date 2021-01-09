@@ -7,6 +7,7 @@ from math import ceil
 import json
 import jwt
 import datetime
+import traceback
 
 SECRET_KEY = "hkBxrbZ9Td4QEwgRewV6gZSVH4q78vBia4GBYuqd09SsiMsIjH"
 
@@ -263,8 +264,7 @@ def registration_user():
 
 # Вход в личный кабинет
 @app.route('/user', methods=['GET'])
-@cross_origin()
-def loginCheckFunction():
+def login():
     input_name = request.args.get('login')
     input_password = request.args.get('password')
     user_data_from_db = checkUserInDB(input_name, input_password)
@@ -310,12 +310,12 @@ def placeOrder():
     try:
         info_order = request.get_json()
         cursor = CONN.cursor()
-        print(info_order['products'])
+        print(info_order)
         if info_order['delivery']['street'] == '':
             query_insert = """INSERT INTO public.orders(
                                                 user_name, user_surname, user_phone, user_email, user_city,
-                                                delivery_type, shop_point_id, street, house, flat, delivery_date,
-                                                payment_type, total_price_products, count_product, id_user)
+                                                id_delivery_type, id_shop, street, house, flat, delivery_date,
+                                                id_payment_method, total_price_products, count_product, id_user)
                                      VALUES ('{name}', '{surname}', '{phone}', '{email}', '{city}', '{deliveryType}',
                                      '{shopId}', NULL, NULL, NULL, NULL, '{paymentType}', '{totalPrice}',
                                      '{countProducts}', '{idUser}')
@@ -329,9 +329,9 @@ def placeOrder():
                                                countProducts=info_order['count_products'], idUser=info_order['id_user'])
         else:
             query_insert = """INSERT INTO public.orders(
-                                    user_name, user_surname, user_phone, user_email, user_city, delivery_type,
-                                    shop_point_id, street, house, flat, payment_type, total_price_products,
-                                    count_product id_user)
+                                    user_name, user_surname, user_phone, user_email, user_city, id_delivery_type,
+                                    id_shop, street, house, flat, id_payment_method, total_price_products,
+                                    count_product, id_user)
                          VALUES ('{name}', '{surname}', '{phone}', '{email}', '{city}', '{deliveryType}', '{shopId}',
                                 '{street}', '{house}', '{flat}', '{paymentType}', '{totalPrice}', '{countProducts}',
                                 '{idUser}')
@@ -357,18 +357,26 @@ def placeOrder():
         cursor.close()
         return jsonify({'success': True})
 
-    except Exception as error:
-        error_string = str(error)
-        print(error_string, '4444')
-        return error_string
+    except Exception as e:
+        traceback.print_exc()
+        return str(e)
+        # print(e, '4444')
+        # error_string = str(e)
+        # return error_string
 
 
 # Зфбираем заказы в БД
 @app.route('/myorders', methods=['GET'])
 def getOrders():
     try:
+        token_passed = request.headers.get('Authorization', default=None)
+        print(token_passed)
+
+
         id = request.args.get('id')
-        ordersDB = allOrdersUser(id)
+        offset = request.args.get('offset')
+        limit = request.args.get('limit')
+        ordersDB, count_tmp = allOrdersUser(id, offset, limit)
         orders_list = []
         cursor = CONN.cursor()
         for row in ordersDB:
@@ -386,15 +394,6 @@ def getOrders():
                 'total_price_products': row[10],
                 'product': [],
             }
-            # query_shop = """select * from shops_point
-            #               where id_shops_point = {id}""".format(id=dTmp['shop_point_id'])
-            # cursor.execute(query_shop)
-            # records = cursor.fetchall()
-            # for row in records:
-            #     dTmp['name_shop'] = row[1]
-            #     dTmp['adress_shop'] = row[2]
-            #     dTmp['working_hours'] = row[3]
-
             query_id = """select id_product_m from order_products
                                       where id_order_m = {id}""".format(id=dTmp['id_order'])
             cursor.execute(query_id)
@@ -410,20 +409,18 @@ def getOrders():
                     productInfo = cursor.fetchall()
                     for row in productInfo:
                         infoTmp = {}
-                        print(row)
                         infoTmp['name_product'] = row[1]
                         infoTmp['price_product'] = row[2]
                         infoTmp['url_image_product'] = row[3]
                         dTmp['product'].append(infoTmp)
             orders_list.append(dTmp)
-        print(orders_list, ' orderlist')
+        count_page = count_tmp[0][0] / int(limit)
         CONN.commit()
         cursor.close()
-        return jsonify({'result': orders_list})
+        return jsonify({'result': orders_list, 'count_page': ceil(count_page)})
     except Exception as error:
-        error_string = str(error)
-        print(error_string)
-        return error_string
+        traceback.print_exc()
+        return str(error)
 
 
 if __name__ == '__main__':
