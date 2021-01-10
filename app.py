@@ -10,22 +10,16 @@ import waitress
 import jwt
 import datetime
 import traceback
+from config import CONECTIONPG as CONN
 
 SECRET_KEY = "hkBxrbZ9Td4QEwgRewV6gZSVH4q78vBia4GBYuqd09SsiMsIjH"
 
 app = Flask(__name__)
 CORS(app)
 
-# POSTGRES = {
-#     'user': 'postgres',
-#     'pw': 'postgres',
-#     'db': 'postgres',
-#     'host': 'localhost',
-#     'port': '5433',
-# }
-
-CONN = connect(dbname='postgres', user='postgres',
-               password='postgres', host='localhost', port=5433)
+#
+# CONN = connect(dbname='postgres', user='postgres',
+#                password='postgres', host='localhost', port=5433)
 
 
 @app.route('/heals', methods=['GET'])
