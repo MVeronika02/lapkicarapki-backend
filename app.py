@@ -17,6 +17,7 @@ SECRET_KEY = "hkBxrbZ9Td4QEwgRewV6gZSVH4q78vBia4GBYuqd09SsiMsIjH"
 app = Flask(__name__)
 CORS(app)
 
+
 #
 # CONN = connect(dbname='postgres', user='postgres',
 #                password='postgres', host='localhost', port=5433)
@@ -48,8 +49,8 @@ def allCategoryForAnimal():
 
 
 # Пагинация контента
-@app.route('/paginationcontent', methods=['GET'])
-def paginationContent():
+@app.route('/content', methods=['GET'])
+def content():
     try:
         limit = request.args.get('limit')
         page = request.args.get('numberpage')
@@ -75,37 +76,9 @@ def paginationContent():
         return error_string
 
 
-# Товары 1 категории
-@app.route('/productsonecategory', methods=['GET'])
-def allProductsOnCategory():
-    try:
-        animal = request.args.get('animal')
-        category = request.args.get('category')
-        rows = productsCategory(animal, category)
-        objects_list = []
-        for row in rows:
-            tmp_row = {}
-            tmp_row['id_animal'] = row[0]
-            tmp_row['id_category'] = row[1]
-            tmp_row['id_product'] = row[2]
-            tmp_row['name_product'] = row[3]
-            tmp_row['price_product'] = row[4]
-            tmp_row['url_image_product'] = row[5]
-            objects_list.append(tmp_row)
-        if objects_list == 0:
-            return jsonify({'success': False, 'result': 'not available'})
-        else:
-            return jsonify({'result': {'product': objects_list}})
-
-    except Exception as error:
-        error_string = str(error)
-        print(error_string)
-        return error_string
-
-
 # Пагинация товаров 1 категории
-@app.route('/paginationproductsonecategory', methods=['GET'])
-def paginationProducts():
+@app.route('/products_one_category', methods=['GET'])
+def products_one_category():
     try:
         limit = request.args.get('limit')
         page = request.args.get('numberpage')
@@ -125,9 +98,7 @@ def paginationProducts():
             tmp_row['url_image_product'] = row[5]
             objects_list.append(tmp_row)
         count_page = count_row[0][0] / int(limit)
-        return jsonify({'result':
-                            {'product': objects_list, 'count_page': ceil(count_page)}
-                        })
+        return jsonify({'product': objects_list, 'count_page': ceil(count_page)})
     except Exception as error:
         error_string = str(error)
         print(error_string)
@@ -136,7 +107,7 @@ def paginationProducts():
 
 # Фильтр товара по параметрам
 @app.route('/products', methods=['GET'])
-def allProductsFiltred():
+def products():
     try:
         value_min = request.args.get('valueMin')
         value_max = request.args.get('valueMax')
@@ -161,8 +132,8 @@ def allProductsFiltred():
 
 
 # Детали товара
-@app.route('/detailsproduct', methods=['GET'])
-def detailsProduct():
+@app.route('/details_product', methods=['GET'])
+def details_product():
     try:
         id = request.args.get('id')
         result_function = detailsProductDB(id)
@@ -204,7 +175,7 @@ def create_review():
 
 
 # Просмотр отзывов о товаре
-@app.route('/inforeviews', methods=['GET'])
+@app.route('/info_reviews', methods=['GET'])
 def info_review():
     id = request.args.get('productid')
     offset = request.args.get('offset')
@@ -225,7 +196,7 @@ def info_review():
 
 # Регистрация на сайте
 @app.route('/registration', methods=['POST'])
-def registration_user():
+def registration():
     try:
         user_data = request.get_json()
         name = user_data['name']
@@ -274,7 +245,8 @@ def login():
         return jsonify({'success': False, 'result': 'user not exist', 'Elapse_time': 0})
     else:
         timeLimit = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # set limit for user
-        payload = {'user_id': user_credentials['id'], 'user_name': input_name, 'user_password': input_password, 'exp': timeLimit}
+        payload = {'user_id': user_credentials['id'], 'user_name': input_name, 'user_password': input_password,
+                   'exp': timeLimit}
         # Generate token
         token = jwt.encode(payload, SECRET_KEY)
         del user_credentials['user_password']
@@ -282,8 +254,8 @@ def login():
                         'Elapse_time': f'{timeLimit}'})
 
 
-@app.route('/check_access', methods=['GET'])
-def checkToken():
+@app.route('/check_token', methods=['GET'])
+def check_token():
     token_passed = request.headers.get('TOKEN', default=None)
     if token_passed == 'undefined' or token_passed is None or token_passed == '':
         return jsonify({'success': False, 'message': 'you are not verified'})
@@ -302,8 +274,8 @@ def checkToken():
 
 
 # #Сохранение заказа в БД
-@app.route('/placeorder', methods=['POST'])
-def placeOrder():
+@app.route('/place_order', methods=['POST'])
+def place_order():
     try:
         info_order = request.get_json()
         cursor = CONN.cursor()
@@ -359,9 +331,8 @@ def placeOrder():
         return str(e)
 
 
-
 # Зфбираем заказы в БД
-@app.route('/myorders', methods=['GET'])
+@app.route('/my_orders', methods=['GET'])
 def getOrders():
     try:
         authorization_header = request.headers.get('Authorization', default=None)
@@ -421,6 +392,33 @@ def getOrders():
     except Exception as error:
         traceback.print_exc()
         return str(error)
+
+# # Товары 1 категории
+# @app.route('/productsonecategory', methods=['GET'])
+# def allProductsOnCategory():
+#     try:
+#         animal = request.args.get('animal')
+#         category = request.args.get('category')
+#         rows = productsCategory(animal, category)
+#         objects_list = []
+#         for row in rows:
+#             tmp_row = {}
+#             tmp_row['id_animal'] = row[0]
+#             tmp_row['id_category'] = row[1]
+#             tmp_row['id_product'] = row[2]
+#             tmp_row['name_product'] = row[3]
+#             tmp_row['price_product'] = row[4]
+#             tmp_row['url_image_product'] = row[5]
+#             objects_list.append(tmp_row)
+#         if objects_list == 0:
+#             return jsonify({'success': False, 'result': 'not available'})
+#         else:
+#             return jsonify({'result': {'product': objects_list}})
+#
+#     except Exception as error:
+#         error_string = str(error)
+#         print(error_string)
+#         return error_string
 
 
 if __name__ == '__main__':
