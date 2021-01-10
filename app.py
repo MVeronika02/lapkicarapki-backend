@@ -263,25 +263,28 @@ def registration_user():
 
 
 # Вход в личный кабинет
-@app.route('/user', methods=['GET'])
+@app.route('/login', methods=['GET'])
 def login():
     input_name = request.args.get('login')
     input_password = request.args.get('password')
     user_data_from_db = checkUserInDB(input_name, input_password)
-    list_user_data = {}
+    user_credentials = {}
     for row in user_data_from_db:
-        list_user_data['id'] = row[0]
-        list_user_data['user_name'] = row[1]
-        list_user_data['user_password'] = row[2]
-        list_user_data['user_email'] = row[3]
-    if len(list_user_data) == 0:
+        user_credentials = {
+            'id': row[0],
+            'user_name': row[1],
+            'user_password': row[2],
+            'user_email': row[3],
+        }
+    if user_credentials == {}:
         return jsonify({'success': False, 'result': 'user not exist', 'Elapse_time': 0})
     else:
         timeLimit = datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # set limit for user
-        payload = {'user_name': input_name, 'user_password': input_password, 'exp': timeLimit}
+        payload = {'user_id': user_credentials['id'], 'user_name': input_name, 'user_password': input_password, 'exp': timeLimit}
         # Generate token
         token = jwt.encode(payload, SECRET_KEY)
-        return jsonify({'success': True, 'result': list_user_data, 'token': token.decode("UTF-8"),
+        del user_credentials['user_password']
+        return jsonify({'success': True, 'result': user_credentials, 'token': token.decode("UTF-8"),
                         'Elapse_time': f'{timeLimit}'})
 
 
@@ -369,14 +372,19 @@ def placeOrder():
 @app.route('/myorders', methods=['GET'])
 def getOrders():
     try:
-        token_passed = request.headers.get('Authorization', default=None)
-        print(token_passed)
-
-
-        id = request.args.get('id')
+        authorization_header = request.headers.get('Authorization', default=None)
+        print(authorization_header)
+        if len(authorization_header.split(' ')) <= 1:
+            return jsonify({'success': False, 'message': 'you are not verified'})
+        token_passed = authorization_header.split(' ')[1]
+        if token_passed == 'undefined' or token_passed is None or token_passed == '':
+            return jsonify({'success': False, 'message': 'you are not verified'})
+        data = jwt.decode(token_passed, SECRET_KEY, algorithms=['HS256'])
+        print(data)
+        idUser = data['user_id']
         offset = request.args.get('offset')
         limit = request.args.get('limit')
-        ordersDB, count_tmp = allOrdersUser(id, offset, limit)
+        ordersDB, count_tmp = allOrdersUser(idUser, offset, limit)
         orders_list = []
         cursor = CONN.cursor()
         for row in ordersDB:
