@@ -1,10 +1,12 @@
+import os
+
 from flask import Flask, request, jsonify, Response, url_for, make_response
 from flask_cors import CORS, cross_origin
 from models import categoriesAnimal, paginationProduct, productsCategory, paginationProductsCategory, \
     productsFiltred, dataReview, detailsProductDB, checkUserInDB, allOrdersUser
 from psycopg2 import *
 from math import ceil
-import json
+import waitress
 import jwt
 import datetime
 import traceback
@@ -26,10 +28,13 @@ CONN = connect(dbname='postgres', user='postgres',
                password='postgres', host='localhost', port=5433)
 
 
-# Категории животных
+@app.route('/heals', methods=['GET'])
+def heals():
+    return "I'm alive"
 
+
+# Категории животных
 @app.route('/categories', methods=['GET'])
-@cross_origin()
 def allCategoryForAnimal():
     try:
         result_function = categoriesAnimal()
@@ -50,7 +55,6 @@ def allCategoryForAnimal():
 
 # Пагинация контента
 @app.route('/paginationcontent', methods=['GET'])
-@cross_origin()
 def paginationContent():
     try:
         limit = request.args.get('limit')
@@ -79,7 +83,6 @@ def paginationContent():
 
 # Товары 1 категории
 @app.route('/productsonecategory', methods=['GET'])
-@cross_origin()
 def allProductsOnCategory():
     try:
         animal = request.args.get('animal')
@@ -108,7 +111,6 @@ def allProductsOnCategory():
 
 # Пагинация товаров 1 категории
 @app.route('/paginationproductsonecategory', methods=['GET'])
-@cross_origin()
 def paginationProducts():
     try:
         limit = request.args.get('limit')
@@ -140,7 +142,6 @@ def paginationProducts():
 
 # Фильтр товара по параметрам
 @app.route('/products', methods=['GET'])
-@cross_origin()
 def allProductsFiltred():
     try:
         value_min = request.args.get('valueMin')
@@ -167,7 +168,6 @@ def allProductsFiltred():
 
 # Детали товара
 @app.route('/detailsproduct', methods=['GET'])
-@cross_origin()
 def detailsProduct():
     try:
         id = request.args.get('id')
@@ -363,9 +363,7 @@ def placeOrder():
     except Exception as e:
         traceback.print_exc()
         return str(e)
-        # print(e, '4444')
-        # error_string = str(e)
-        # return error_string
+
 
 
 # Зфбираем заказы в БД
@@ -432,4 +430,7 @@ def getOrders():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port="5000")
+    app.debug = False
+    port = int(os.environ.get('PORT', 5000))
+    waitress.serve(app, port=port)
+    # app.run(host='0.0.0.0', debug=False, port="5000")
